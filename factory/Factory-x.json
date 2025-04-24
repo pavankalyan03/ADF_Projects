@@ -1,0 +1,9 @@
+{
+	"name": "Factory-x",
+	"location": "centralindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "c56ac50e-7544-4072-a498-0aa45a6cbed9",
+		"tenantId": "04e54347-efa6-4691-9af4-a81cff85bdb0"
+	}
+}

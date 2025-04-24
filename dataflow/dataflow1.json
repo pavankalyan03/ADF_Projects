@@ -1,0 +1,209 @@
+{
+	"name": "dataflow1",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_SalesCSV",
+						"type": "DatasetReference"
+					},
+					"name": "SqlDatabase"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "NA_dataset",
+						"type": "DatasetReference"
+					},
+					"name": "NorthAmericaSink"
+				},
+				{
+					"dataset": {
+						"referenceName": "Europe_DS",
+						"type": "DatasetReference"
+					},
+					"name": "EuropeSink"
+				},
+				{
+					"dataset": {
+						"referenceName": "Asia_DS",
+						"type": "DatasetReference"
+					},
+					"name": "AsiaSink"
+				},
+				{
+					"dataset": {
+						"referenceName": "SA_DS",
+						"type": "DatasetReference"
+					},
+					"name": "SASink"
+				},
+				{
+					"dataset": {
+						"referenceName": "Africa_DS",
+						"type": "DatasetReference"
+					},
+					"name": "AfricaSink"
+				},
+				{
+					"dataset": {
+						"referenceName": "stagetable",
+						"type": "DatasetReference"
+					},
+					"name": "staging"
+				}
+			],
+			"transformations": [
+				{
+					"name": "AddTotalSales"
+				},
+				{
+					"name": "SplitByRegion"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          OrderID as integer,",
+				"          OrderDate as date 'dd/MM/yyyy',",
+				"          CustomerID as integer,",
+				"          Region as string,",
+				"          ProductID as integer,",
+				"          Quantity as decimal(10,0),",
+				"          UnitPrice as decimal(10,0)",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> SqlDatabase",
+				"SqlDatabase derive(TotalSales = Quantity * UnitPrice) ~> AddTotalSales",
+				"AddTotalSales split(Region == 'North America',",
+				"     Region == 'Europe',",
+				"     Region == 'Asia',",
+				"     Region == 'South America',",
+				"     Region == 'Africa',",
+				"     disjoint: true) ~> SplitByRegion@(NorthAmericaData, EuropeData, AsiaData, SouthAmericaData, AfricaData, Others)",
+				"SplitByRegion@NorthAmericaData sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          OrderID as integer,",
+				"          OrderDate as date,",
+				"          CustomerID as integer,",
+				"          ProductID as integer,",
+				"          Quantity as integer,",
+				"          UnitPrice as decimal(10,2),",
+				"          TotalSales as decimal(12,2)",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     saveOrder: 1,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> NorthAmericaSink",
+				"SplitByRegion@EuropeData sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          OrderID as integer,",
+				"          OrderDate as date,",
+				"          CustomerID as string,",
+				"          Region as string,",
+				"          ProductID as string,",
+				"          Quantity as integer,",
+				"          UnitPrice as decimal(10,2),",
+				"          TotalSales as decimal(10,2)",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> EuropeSink",
+				"SplitByRegion@AsiaData sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          OrderID as integer,",
+				"          OrderDate as date,",
+				"          CustomerID as string,",
+				"          Region as string,",
+				"          ProductID as string,",
+				"          Quantity as integer,",
+				"          UnitPrice as decimal(10,2),",
+				"          TotalSales as decimal(10,2)",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> AsiaSink",
+				"SplitByRegion@SouthAmericaData sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          OrderID as integer,",
+				"          OrderDate as date,",
+				"          CustomerID as string,",
+				"          Region as string,",
+				"          ProductID as string,",
+				"          Quantity as integer,",
+				"          UnitPrice as decimal(10,2),",
+				"          TotalSales as decimal(10,2)",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> SASink",
+				"SplitByRegion@AfricaData sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          OrderID as integer,",
+				"          OrderDate as date,",
+				"          CustomerID as string,",
+				"          Region as string,",
+				"          ProductID as string,",
+				"          Quantity as integer,",
+				"          UnitPrice as decimal(10,2),",
+				"          TotalSales as decimal(10,2)",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> AfricaSink",
+				"AddTotalSales sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          OrderID as integer,",
+				"          OrderDate as date,",
+				"          CustomerID as integer,",
+				"          Region as string,",
+				"          ProductID as integer,",
+				"          Quantity as integer,",
+				"          UnitPrice as decimal(10,2)",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> staging"
+			]
+		}
+	}
+}

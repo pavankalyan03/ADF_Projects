@@ -1,0 +1,163 @@
+{
+	"name": "dataflow2",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "EU_DS",
+						"type": "DatasetReference"
+					},
+					"name": "EU"
+				},
+				{
+					"dataset": {
+						"referenceName": "US_DS",
+						"type": "DatasetReference"
+					},
+					"name": "US"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DupeDS",
+						"type": "DatasetReference"
+					},
+					"name": "SinkForDuplicates"
+				},
+				{
+					"dataset": {
+						"referenceName": "MasterDS",
+						"type": "DatasetReference"
+					},
+					"name": "SinkForMaster"
+				}
+			],
+			"transformations": [
+				{
+					"name": "AddingMetadataEU"
+				},
+				{
+					"name": "AddingMetadataUS"
+				},
+				{
+					"name": "Merging"
+				},
+				{
+					"name": "CleanedData"
+				},
+				{
+					"name": "aggregate1"
+				},
+				{
+					"name": "HereWeJoin"
+				},
+				{
+					"name": "split1"
+				},
+				{
+					"name": "RecordDupe"
+				},
+				{
+					"name": "RecordMaster"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          CustomerID as integer,",
+				"          FirstName as string,",
+				"          LastName as string,",
+				"          Email as string,",
+				"          Phone as string,",
+				"          Region as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     documentForm: 'documentPerLine') ~> EU",
+				"source(output(",
+				"          CustomerID as integer,",
+				"          FirstName as string,",
+				"          LastName as string,",
+				"          Email as string,",
+				"          Phone as string,",
+				"          Region as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     documentForm: 'documentPerLine') ~> US",
+				"EU derive(DataSource = 'EU',",
+				"          IngestedDate = currentUTC()) ~> AddingMetadataEU",
+				"US derive(DataSource = 'US',",
+				"          IngestedDate = currentUTC()) ~> AddingMetadataUS",
+				"AddingMetadataEU, AddingMetadataUS union(byName: true)~> Merging",
+				"Merging derive(CleanFullName = lower(concat(trim(FirstName), trim(LastName))),",
+				"          CleanPhone = replace(replace(Phone, '-', ''), ' ', '')) ~> CleanedData",
+				"CleanedData aggregate(groupBy(CleanPhone,",
+				"          CleanFullName),",
+				"     CountDuplicates = count()) ~> aggregate1",
+				"CleanedData, aggregate1 join(CleanedData@CleanPhone == aggregate1@CleanPhone",
+				"     && CleanedData@CleanFullName == aggregate1@CleanFullName,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> HereWeJoin",
+				"HereWeJoin split(CountDuplicates > 1,",
+				"     CountDuplicates == 1,",
+				"     disjoint: false) ~> split1@(Duplicates, Master, Others)",
+				"split1@Duplicates derive(RecordStatus = 'Duplicate') ~> RecordDupe",
+				"split1@Master derive(RecordStatus = 'Active') ~> RecordMaster",
+				"RecordDupe sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          CustomerID as integer,",
+				"          FirstName as string,",
+				"          LastName as string,",
+				"          Email as string,",
+				"          Phone as string,",
+				"          Region as string,",
+				"          DataSource as string,",
+				"          IngestedDate as timestamp,",
+				"          RecordStatus as string,",
+				"          CleanFullName as string,",
+				"          CleanPhone as string,",
+				"          CountDuplicates as integer",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> SinkForDuplicates",
+				"RecordMaster sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          CustomerID as integer,",
+				"          FirstName as string,",
+				"          LastName as string,",
+				"          Email as string,",
+				"          Phone as string,",
+				"          Region as string,",
+				"          DataSource as string,",
+				"          IngestedDate as timestamp,",
+				"          RecordStatus as string,",
+				"          CleanFullName as string,",
+				"          CleanPhone as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> SinkForMaster"
+			]
+		}
+	}
+}

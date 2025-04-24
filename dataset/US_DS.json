@@ -1,0 +1,42 @@
+{
+	"name": "US_DS",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "is_adls_covidreportingdl",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "customers_us.json",
+				"fileSystem": "manoj-data"
+			}
+		},
+		"schema": {
+			"type": "object",
+			"properties": {
+				"CustomerID": {
+					"type": "integer"
+				},
+				"FirstName": {
+					"type": "string"
+				},
+				"LastName": {
+					"type": "string"
+				},
+				"Email": {
+					"type": "string"
+				},
+				"Phone": {
+					"type": "string"
+				},
+				"Region": {
+					"type": "string"
+				}
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
